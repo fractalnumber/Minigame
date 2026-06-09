@@ -56,6 +56,8 @@ void MainMenu()
 
 void Menu_1()
 {
+    system("cls");
+    
 }
 
 void Menu_2()
@@ -102,7 +104,7 @@ void Menu_3()
 
 
 
-
+    
 
 }
 
