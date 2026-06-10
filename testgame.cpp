@@ -3,15 +3,18 @@
 #include <conio.h>  // _kbhit(), _getch()
 #include <wchar.h>
 #include <locale.h>
+#include <random>
+#include <time.h>
 #include "functions.h"
 
 
 using namespace std;
 
-int main() 
+int main()
 
 {
 
+    srand(time(NULL));
     /*
     cout << "아무 키나 누르면 즉시 반응합니다. (q: 종료)\n";
 
@@ -63,7 +66,11 @@ int main()
     
     */
     
-    MainMenu();
+    // MainMenu();
+
+    std::string word = "";
+
+    Menu_1_GenerateWords(word);
 
 
 }

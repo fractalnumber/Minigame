@@ -57,8 +57,39 @@ void MainMenu()
 void Menu_1()
 {
     system("cls");
+
+    printf("==============================================================================================================================================================================");
+  
     
 }
+
+void Menu_1_GenerateWords(std::string Outputword)
+{
+    // Method 1
+
+    const std::string WordsContainer = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
+
+    std::string CombineWord = "";   
+    
+    int Wordslength = 0;
+    
+    
+
+    while (true)
+    {
+        CombineWord = "";
+        Wordslength = (rand() % 10) + 2; // 2~ 11까지
+        for (int i = 0; i < Wordslength; i++)
+        {
+            CombineWord += static_cast<char>(WordsContainer[rand() % WordsContainer.size()]);
+        }
+
+        printf("%s\n", CombineWord.c_str());
+        Sleep(20);
+    }
+}
+
+
 
 void Menu_2()
 {
