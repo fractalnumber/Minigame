@@ -10,6 +10,7 @@ void Menu_2_WordLayout();
 void Menu_2_StatusLayout();
 void Menu_3();
 void Menu_4();
+void Menu_4_ReceiveScore();
 
 void Environment();
 void TitleName(std::string InString);

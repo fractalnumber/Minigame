@@ -17,9 +17,9 @@ int main()
 {  
 	srand(time(NULL));
 
-	// MainMenu();
+	MainMenu();
 
 	// Menu_4();
 
-	Menu_2_StatusLayout();
+	// Menu_2_StatusLayout();
 }
