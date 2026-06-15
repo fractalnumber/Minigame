@@ -1,12 +1,12 @@
 #pragma once
 #include <iostream>
+#include <atomic>
 
 void MainMenu();
 
 void Menu_1();
 void Menu_1_MainLayout();
 void Menu_1_InputLayout();
-
 void Menu_2();
 void Menu_2_WordLayout();
 void Menu_2_InputLayout();
@@ -46,3 +46,5 @@ struct PlayerInfo2 // 산성비용 정보 구조체
 	int CurrentHealth = 10;
 	int CurrentScore = 0;
 };
+
+void ComputerInput(Words1* InGame1Word, PlayerInfo1* MyPlayerInfo, std::atomic<int>* flag);

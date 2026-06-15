@@ -12,9 +12,10 @@
 #include <windows.h>
 #include "functions.h"
 
-std::atomic<bool> GameRunning(true);
+std::atomic<bool> running(true);
 std::mutex Gamemutex;
-
+std::mt19937 rng(std::random_device{}());
+std::atomic<int> flag = 0; // 단어 제거 횟수 카운트. 홀수 개로 설정하면 무승부는 절대 발생하지 않음
 
 void MainMenu()
 {      
@@ -101,17 +102,10 @@ void Menu_1_MainLayout()
 
 void Menu_1_InputLayout()
 {    
-    
-
-    int flag = 0; // 단어 제거 횟수 카운트. 홀수 개로 설정하면 무승부는 절대 발생하지 않음
-
+       
     PlayerInfo1 MyPlayerInfo;
-    Words1 InGame1Word;
+    Words1 InGame1Word; 
 
-    srand(time(NULL));
-
-
-    
 
     // 외부 파일 읽기
 
@@ -119,6 +113,7 @@ void Menu_1_InputLayout()
 
     std::ifstream file("words.txt");
     std::string line;
+
 
     if (file.is_open())
     {
@@ -133,9 +128,13 @@ void Menu_1_InputLayout()
         }
     }
 
-    std::thread ComputerThread(ComputerInput, &InGame1Word, &MyPlayerInfo, &flag);
 
-    StageStart:  
+    
+
+    while (running)
+    {
+        flag = 0;
+        std::thread ComputerThread(ComputerInput, &InGame1Word, &MyPlayerInfo, &flag);
 
     // 단어배열 초기화
 
@@ -186,7 +185,7 @@ void Menu_1_InputLayout()
 
                if (InGame1Word.Game1WordTable[e][f] == InputString)
                {
-                   InGame1Word.Game1WordTable[e][f] = "";
+                   InGame1Word.Game1WordTable[e][f] = "　";
                    MyPlayerInfo.CurrentScore += 10;
                    MyPlayerInfo.PlayerCount++;
                    flag++;
@@ -194,15 +193,11 @@ void Menu_1_InputLayout()
                }
             }
 
-        }
-        
+        }                    
+               
 
     }
-
-    if (ComputerThread.joinable())
-{
     ComputerThread.join();
-}
 
         // 단어 모두 제거된 후
 
@@ -217,18 +212,19 @@ void Menu_1_InputLayout()
             MyPlayerInfo.PlayerCount = 0;
             MyPlayerInfo.ComputerCount = 0;
             flag = 0;
-            goto StageStart;
+           
 
         }
         else if (MyPlayerInfo.PlayerCount < MyPlayerInfo.ComputerCount) // 컴퓨터가 더 많이 제거했으면
         {
-            printf("\n 패배했습니다.");
-            
+            running = false;
+            InGame1TitleName("자원캐기", MyPlayerInfo.CurrentStage, MyPlayerInfo.CurrentScore);
+            printf("\n\n\n 패배했습니다.");
         }
 
+    }
         
-        
-        InGame1TitleName("자원캐기", MyPlayerInfo.CurrentStage, MyPlayerInfo.CurrentScore);          
+               
         
     
 
@@ -237,9 +233,9 @@ void Menu_1_InputLayout()
 
 }
 
-void ComputerInput(Words1* InGame1Word, PlayerInfo1* MyPlayerInfo, int* flag)
+void ComputerInput(Words1* InGame1Word, PlayerInfo1* MyPlayerInfo, std::atomic<int>* flag)
 {
-    while (*flag < 27)
+    while (running && flag->load() < 27)
     {
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
@@ -268,7 +264,7 @@ void ComputerInput(Words1* InGame1Word, PlayerInfo1* MyPlayerInfo, int* flag)
             InGame1Word->Game1WordTable[row][col] = "";
 
             MyPlayerInfo->ComputerCount++;
-            (*flag)++;
+            flag->fetch_add(1);
            
         }
     }
