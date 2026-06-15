@@ -3,9 +3,17 @@
 #include <conio.h>
 #include <iomanip>
 #include <string>
+#include <fstream>
+#include <sstream>
 #include <random>
+#include <atomic>
+#include <chrono>
+#include <mutex>
 #include <windows.h>
 #include "functions.h"
+
+std::atomic<bool> GameRunning(true);
+std::mutex Gamemutex;
 
 
 void MainMenu()
@@ -18,7 +26,7 @@ void MainMenu()
     printf("\n");
     printf("[메뉴 선택]");
     printf("\n\n\n");
-    printf("1. 산성비\n\n2. 자원캐기\n\n3. 도움말\n\n4. 점수\n\n5. 종료\n\n\n\n");
+    printf("1. 자원캐기\n\n2. 산성비\n\n3. 도움말\n\n4. 점수\n\n5. 종료\n\n\n\n");
     printf("입력 : ");
 
     ChooseMenu = _getch();
@@ -59,81 +67,218 @@ void MainMenu()
 }
 
 
-void Menu_1() // 메뉴 1 하위구조 호출용
-{
-    Environment();
-    TitleName("산성비");
-    Menu_1_MainLayout();  
 
+void Menu_1()
+{
+    
+    Environment();
+    
+    PlayerInfo1 MyPlayerInfo{};
+    InGame1TitleName("자원캐기",MyPlayerInfo.CurrentStage,MyPlayerInfo.CurrentScore);
+        
+
+    printf("\n\n\n\n\n\n\n\n                                       아무 키나 누르면 시작합니다.");
+    _getch();
+    ;            
+    
+    Menu_1_MainLayout();    
+    
 }
+
 void Menu_1_MainLayout()
 {
+    system("cls");
+
+    PlayerInfo1 MyPlayerInfo{};
+    InGame1TitleName("자원캐기", MyPlayerInfo.CurrentStage, MyPlayerInfo.CurrentScore);         
+  
+    std::thread T1(Menu_1_InputLayout);
+    T1.join();
 
 
 }
 
-void Menu_1_WordLayout()
-{
+
+void Menu_1_InputLayout()
+{    
+    
+
+    int flag = 0; // 단어 제거 횟수 카운트. 홀수 개로 설정하면 무승부는 절대 발생하지 않음
+
+    PlayerInfo1 MyPlayerInfo;
+    Words1 InGame1Word;
+
+    srand(time(NULL));
+
 
     
 
+    // 외부 파일 읽기
 
-}
+    std::vector<std::string> words;
 
-void Menu_1_Inputword()
-{
-    
-    while (true)
-    {   
-        printf("\n입력 : ");
-        std::string InputString = "";
+    std::ifstream file("words.txt");
+    std::string line;
 
-        std::cin >> std::noskipws;
-        std::cin >> InputString;
-        std::cin.clear();
-        std::cin.ignore(10000);
-
-       
-    }
-}
-
-void GenerateWords()
-{
-    /* Method 1
-
-    const std::string WordsContainer = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
-
-    std::string CombineWord = "";   
-    
-    int Wordslength = 0;
-    
-    
-
-    while (true)
+    if (file.is_open())
     {
-        CombineWord = "";
-        Wordslength = (rand() % 10) + 2; // 2~ 11까지
-        for (int i = 0; i < Wordslength; i++)
+        std::getline(file, line);
+
+        std::stringstream ss(line);
+        std::string word;
+
+        while (std::getline(ss, word, ','))
         {
-            CombineWord += static_cast<char>(WordsContainer[rand() % WordsContainer.size()]);
+            words.push_back(word);
+        }
+    }
+
+    std::thread ComputerThread(ComputerInput, &InGame1Word, &MyPlayerInfo, &flag);
+
+    StageStart:  
+
+    // 단어배열 초기화
+
+    for (int e = 0; e < 9; e++)
+    {
+        for (int f = 0; f < 3; f++)
+        {
+            std::string& InArray = words[rand() % words.size()];
+            InGame1Word.Game1WordTable[e][f] = InArray;
         }
 
-        printf("%s\n", CombineWord.c_str());
-        Sleep(20);
     }
-    */
 
-    // Method 2
+
+    
+    while (flag < 27)
+    {   
+        system("cls");
+        InGame1TitleName("자원캐기", MyPlayerInfo.CurrentStage, MyPlayerInfo.CurrentScore);
+
+        for (int e = 0; e < 9; e++)
+        {
+            for (int f = 0; f < 3; f++)
+            {
+                printf("%-15s ", InGame1Word.Game1WordTable[e][f].c_str());
+            }
+            printf("\n");
+        }
+
+        printf("\n\n\n\n\n\n\n\n내가 입력한 단어의 개수 : %d\n컴퓨터가 입력한 단어의 개수 : %d\n", MyPlayerInfo.PlayerCount, MyPlayerInfo.ComputerCount);
+
+        const int Border = 105; // 구분선 길이
+        for (int i = 0; i < Border; i++)
+        {
+            printf("─");
+        }
+        printf("\n\n입력 : ");
+        std::string InputString;
+        std::getline(std::cin, InputString);
+        system("cls");
+
+        std::lock_guard<std::mutex> lock(Gamemutex);
+
+        for (int e = 0; e < 9; e++)
+        {
+            for (int f = 0; f < 3; f++)
+            {
+
+               if (InGame1Word.Game1WordTable[e][f] == InputString)
+               {
+                   InGame1Word.Game1WordTable[e][f] = "";
+                   MyPlayerInfo.CurrentScore += 10;
+                   MyPlayerInfo.PlayerCount++;
+                   flag++;
+                   
+               }
+            }
+
+        }
+        
+
+    }
+
+    if (ComputerThread.joinable())
+{
+    ComputerThread.join();
+}
+
+        // 단어 모두 제거된 후
+
+        if (MyPlayerInfo.PlayerCount > MyPlayerInfo.ComputerCount) // 플레이어가 컴퓨터보다 더 많이 제거했으면
+        {
+            printf("\n승리! 다음 단계로 진행합니다.");            
+            MyPlayerInfo.CurrentStage++;
+            _getch();
+
+            // 현재 스테이지 정보는 초기화                  
+                       
+            MyPlayerInfo.PlayerCount = 0;
+            MyPlayerInfo.ComputerCount = 0;
+            flag = 0;
+            goto StageStart;
+
+        }
+        else if (MyPlayerInfo.PlayerCount < MyPlayerInfo.ComputerCount) // 컴퓨터가 더 많이 제거했으면
+        {
+            printf("\n 패배했습니다.");
+            
+        }
+
+        
+        
+        InGame1TitleName("자원캐기", MyPlayerInfo.CurrentStage, MyPlayerInfo.CurrentScore);          
+        
+    
+
+
 
 
 }
 
+void ComputerInput(Words1* InGame1Word, PlayerInfo1* MyPlayerInfo, int* flag)
+{
+    while (*flag < 27)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        std::lock_guard<std::mutex> lock(Gamemutex);
+
+        std::vector<std::pair<int, int>> AvailableWords;
+
+        for (int e = 0; e < 9; e++)
+        {
+            for (int f = 0; f < 3; f++)
+            {
+                if (!InGame1Word->Game1WordTable[e][f].empty())
+                {
+                    AvailableWords.push_back({ e, f });
+                }
+            }
+        }
+
+        if (!AvailableWords.empty())
+        {
+            int index = rand() % AvailableWords.size();
+
+            int row = AvailableWords[index].first;
+            int col = AvailableWords[index].second;
+
+            InGame1Word->Game1WordTable[row][col] = "";
+
+            MyPlayerInfo->ComputerCount++;
+            (*flag)++;
+           
+        }
+    }
+}
 
 
 void Menu_2()
 {
     Environment();
-    TitleName("자원 캐기");
+    TitleName("산성비");
     
     bool Result = false;
     std::string PlayerName = "";
@@ -146,17 +291,14 @@ void Menu_2()
     
     
 }
-
 void Menu_2_WordLayout()
 {
 
 }
-
-void Menu_2_StatusLayout()
+void Menu_2_InputLayout()
 {
- 
+  
 }
-
 
 
 void Menu_3()
@@ -185,6 +327,7 @@ void Menu_3()
 
 }
 
+
 void Menu_4()
 {    
     Environment();
@@ -197,16 +340,16 @@ void Menu_4()
     
     
     std::string Name[HighScoreMaxCount][AlignInfo] = {
-    {"AAA","10","999","산성비"},
-    {"BBB","9","888","산성비"},
-    {"CCC","8","777","산성비"},
-    {"DDD","7","666","산성비"},
-    {"EEE","6","555","산성비"},
-    {"FFF","5","444","산성비"},
-    {"GGG","4","333","산성비"},
-    {"HHH","3","222","산성비"},
-    {"III","2","111","산성비"},
-    {"JJJ","1","1","산성비"},
+    {"AAA","10","9999","산성비"},
+    {"BBB","9","8888","자원캐기"},
+    {"CCC","8","7777","산성비"},
+    {"DDD","7","6666","자원캐기"},
+    {"EEE","6","5555","산성비"},
+    {"FFF","5","4444","자원캐기"},
+    {"GGG","4","3333","산성비"},
+    {"HHH","3","2222","자원캐기"},
+    {"III","2","1111","산성비"},
+    {"JJJ","1","1","자원캐기"},
     }; // default fixed data
 
     
@@ -244,9 +387,40 @@ void Menu_4()
     
 
 }
-
 void Menu_4_ReceiveScore()
 {
+}
+
+
+void GenerateWords()
+{
+    /* Method 1
+
+    const std::string WordsContainer = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
+
+    std::string CombineWord = "";   
+    
+    int Wordslength = 0;
+    
+    
+
+    while (true)
+    {
+        CombineWord = "";
+        Wordslength = (rand() % 10) + 2; // 2~ 11까지
+        for (int i = 0; i < Wordslength; i++)
+        {
+            CombineWord += static_cast<char>(WordsContainer[rand() % WordsContainer.size()]);
+        }
+
+        printf("%s\n", CombineWord.c_str());
+        Sleep(20);
+    }
+    */
+
+    // Method 2
+
+
 }
 
 void Environment()
@@ -266,6 +440,40 @@ void TitleName(std::string InString) // 위에 내용을 표시한다.
     }
 
     printf("\n%s\n", InString.c_str());
+
+    for (int i = 0; i < Border; i++)
+    {
+        printf("─");
+    }
+
+    printf("\n\n");
+}
+void InGame1TitleName(std::string InString,int InStage, int InScore) // 산성비용 제목
+{           
+    const int Border = 105; // 구분선 길이
+    for (int i = 0; i < Border; i++)
+    {
+        printf("─");
+    }
+
+    printf("\n%s　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　스테이지 : %d　　　　점수 : %d　\n", InString.c_str(), InStage,InScore);
+
+    for (int i = 0; i < Border; i++)
+    {
+        printf("─");
+    }
+
+    printf("\n\n");
+}
+void InGame2TitleName(std::string InString,int InStage, int InHealth, int InScore) // 자원캐기용 제목
+{    
+    const int Border = 105; // 구분선 길이
+    for (int i = 0; i < Border; i++)
+    {
+        printf("─");
+    }
+
+    printf("\n%s　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　스테이지 : %d　　　　　점수 : %d\n", InString.c_str(),InStage,InScore);
 
     for (int i = 0; i < Border; i++)
     {

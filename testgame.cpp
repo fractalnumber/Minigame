@@ -14,12 +14,7 @@ using namespace std;
 
 int main()
 
-{  
-	srand(time(NULL));
-
+{  	
 	MainMenu();
 
-	// Menu_4();
-
-	// Menu_2_StatusLayout();
 }
